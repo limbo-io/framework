@@ -8,7 +8,7 @@
         <artifactId>limbo-framework</artifactId>
         <version>${revision}</version>
     </parent>
-    <artifactId>limbo-utils</artifactId>
+    <artifactId>utils</artifactId>
     <version>${revision}</version>
     <packaging>jar</packaging>
 
