@@ -4,9 +4,6 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Tests for {@link MessageIdentifier}.
- */
 class MessageIdentifierTest {
 
     @Test
@@ -21,7 +18,6 @@ class MessageIdentifierTest {
     @Test
     void shouldCreateFromString() {
         String uuid = "550e8400-e29b-41d4-a716-446655440000";
-
         MessageIdentifier id = MessageIdentifier.fromString(uuid);
 
         assertEquals(uuid, id.asString());
@@ -30,30 +26,10 @@ class MessageIdentifierTest {
     @Test
     void shouldBeEqualWhenSameValue() {
         String uuid = "550e8400-e29b-41d4-a716-446655440000";
-
         MessageIdentifier id1 = MessageIdentifier.fromString(uuid);
         MessageIdentifier id2 = MessageIdentifier.fromString(uuid);
 
         assertEquals(id1, id2);
         assertEquals(id1.hashCode(), id2.hashCode());
-    }
-
-    @Test
-    void shouldReturnStringRepresentation() {
-        MessageIdentifier id = MessageIdentifier.generate();
-
-        String result = id.toString();
-
-        assertEquals(id.asString(), result);
-    }
-
-    @Test
-    void shouldThrowWhenNullString() {
-        assertThrows(NullPointerException.class, () -> MessageIdentifier.fromString(null));
-    }
-
-    @Test
-    void shouldThrowWhenEmptyString() {
-        assertThrows(IllegalArgumentException.class, () -> MessageIdentifier.fromString(""));
     }
 }

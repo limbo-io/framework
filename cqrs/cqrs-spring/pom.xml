@@ -10,15 +10,20 @@
         <version>${revision}</version>
     </parent>
 
-    <artifactId>cqrs-core</artifactId>
-    <name>CQRS Core</name>
-    <description>Core CQRS framework with command, query, and event handling</description>
+    <artifactId>cqrs-spring</artifactId>
+    <name>CQRS Spring</name>
+    <description>Spring integration for CQRS framework</description>
 
     <dependencies>
         <dependency>
             <groupId>io.github.limbo-io</groupId>
-            <artifactId>utils</artifactId>
+            <artifactId>cqrs-core</artifactId>
             <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>5.3.27</version>
         </dependency>
     </dependencies>
 

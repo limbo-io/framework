@@ -1,0 +1,33 @@
+{
+  "properties": [
+    {
+      "name": "limbo.cqrs.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable CQRS auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "limbo.cqrs.base-packages",
+      "type": "java.lang.String[]",
+      "description": "Base packages to scan for handlers."
+    },
+    {
+      "name": "limbo.cqrs.command.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable command bus auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "limbo.cqrs.query.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable query bus auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "limbo.cqrs.event.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable event bus auto-configuration.",
+      "defaultValue": true
+    }
+  ]
+}
