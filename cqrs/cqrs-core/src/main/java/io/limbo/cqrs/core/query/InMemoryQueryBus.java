@@ -11,22 +11,22 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryQueryBus implements QueryBus {
 
-    private final Map<Class<? extends Query>, QueryHandler<?, ?>> handlers = new ConcurrentHashMap<>();
+    private final Map<Class<? extends IQuery>, QueryHandler<?, ?>> handlers = new ConcurrentHashMap<>();
 
     @Override
     @SuppressWarnings("unchecked")
-    public Object execute(Query query) {
+    public Object execute(IQuery query) {
         if (query == null) {
             throw new IllegalArgumentException("Query cannot be null");
         }
 
-        QueryHandler<Query, Object> handler = findHandler(query.getClass());
+        QueryHandler<IQuery, Object> handler = findHandler(query.getClass());
         return handler.handle(query);
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <R> R execute(Query query, Class<R> resultType) {
+    public <R> R execute(IQuery query, Class<R> resultType) {
         Object result = execute(query);
         if (result == null) {
             return null;
@@ -40,7 +40,7 @@ public class InMemoryQueryBus implements QueryBus {
     }
 
     @Override
-    public <Q extends Query, R> void register(Class<Q> queryType, QueryHandler<Q, R> handler) {
+    public <Q extends IQuery, R> void register(Class<Q> queryType, QueryHandler<Q, R> handler) {
         if (queryType == null) {
             throw new IllegalArgumentException("Query type cannot be null");
         }
@@ -52,7 +52,7 @@ public class InMemoryQueryBus implements QueryBus {
     }
 
     @SuppressWarnings("unchecked")
-    private <Q extends Query, R> QueryHandler<Q, R> findHandler(Class<?> queryType) {
+    private <Q extends IQuery, R> QueryHandler<Q, R> findHandler(Class<?> queryType) {
         QueryHandler<?, ?> handler = handlers.get(queryType);
         if (handler == null) {
             throw new HandlerNotFoundException(queryType);

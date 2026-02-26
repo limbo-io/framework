@@ -32,7 +32,7 @@ class InMemoryQueryBusTest {
         assertEquals("Result: test", result);
     }
 
-    static class TestQuery implements Query {
+    static class TestQuery implements IQuery {
         private final String criteria;
         TestQuery(String criteria) { this.criteria = criteria; }
         String getCriteria() { return criteria; }

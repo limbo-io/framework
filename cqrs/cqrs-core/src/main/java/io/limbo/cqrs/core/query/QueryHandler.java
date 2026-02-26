@@ -7,7 +7,7 @@ package io.limbo.cqrs.core.query;
  * @param <R> the result type
  */
 @FunctionalInterface
-public interface QueryHandler<Q extends Query, R> {
+public interface QueryHandler<Q extends IQuery, R> {
 
     /**
      * Handles the given query.

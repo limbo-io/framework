@@ -1,9 +1,9 @@
 package io.limbo.cqrs.springboot.starter.autoconfigure;
 
-import io.limbo.cqrs.core.command.Command;
+import io.limbo.cqrs.core.command.ICommand;
 import io.limbo.cqrs.core.command.CommandBus;
 import io.limbo.cqrs.core.command.CommandHandler;
-import io.limbo.cqrs.core.query.Query;
+import io.limbo.cqrs.core.query.IQuery;
 import io.limbo.cqrs.core.query.QueryBus;
 import io.limbo.cqrs.core.query.QueryHandler;
 import io.limbo.cqrs.spring.scanner.HandlerScanner;
@@ -92,8 +92,8 @@ public class HandlerRegistrarAutoConfiguration {
                     if (commandBusProvider != null) {
                         CommandBus commandBus = commandBusProvider.getIfAvailable();
                         if (commandBus != null) {
-                            CommandHandler<Command> handler = createCommandHandler(bean, method);
-                            commandBus.register((Class<Command>) payloadType, handler);
+                            CommandHandler<ICommand, Object> handler = createCommandHandler(bean, method);
+                            commandBus.register((Class<ICommand>) payloadType, handler);
                             log.debug("Registered command handler for {} in bean {}",
                                     payloadType.getName(), bean.getClass().getName());
                         }
@@ -104,8 +104,8 @@ public class HandlerRegistrarAutoConfiguration {
                     if (queryBusProvider != null) {
                         QueryBus queryBus = queryBusProvider.getIfAvailable();
                         if (queryBus != null) {
-                            QueryHandler<Query, Object> handler = createQueryHandler(bean, method);
-                            queryBus.register((Class<Query>) payloadType, handler);
+                            QueryHandler<IQuery, Object> handler = createQueryHandler(bean, method);
+                            queryBus.register((Class<IQuery>) payloadType, handler);
                             log.debug("Registered query handler for {} in bean {}",
                                     payloadType.getName(), bean.getClass().getName());
                         }
@@ -114,11 +114,11 @@ public class HandlerRegistrarAutoConfiguration {
             }
         }
 
-        private CommandHandler<Command> createCommandHandler(Object bean, Method method) {
+        private <R> CommandHandler<ICommand, R> createCommandHandler(Object bean, Method method) {
             method.setAccessible(true);
             return command -> {
                 try {
-                    return method.invoke(bean, command);
+                    return (R) method.invoke(bean, command);
                 } catch (InvocationTargetException e) {
                     Throwable cause = e.getTargetException();
                     if (cause instanceof RuntimeException) {
@@ -132,7 +132,7 @@ public class HandlerRegistrarAutoConfiguration {
         }
 
         @SuppressWarnings("unchecked")
-        private <R> QueryHandler<Query, R> createQueryHandler(Object bean, Method method) {
+        private <R> QueryHandler<IQuery, R> createQueryHandler(Object bean, Method method) {
             method.setAccessible(true);
             return query -> {
                 try {

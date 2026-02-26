@@ -12,7 +12,7 @@ public interface QueryBus {
      * @return the handler result
      * @throws io.limbo.cqrs.core.handler.HandlerNotFoundException if no handler registered
      */
-    Object execute(Query query);
+    Object execute(IQuery query);
 
     /**
      * Executes a query and returns result of specific type.
@@ -22,7 +22,7 @@ public interface QueryBus {
      * @param <R>        the result type
      * @return the handler result
      */
-    <R> R execute(Query query, Class<R> resultType);
+    <R> R execute(IQuery query, Class<R> resultType);
 
     /**
      * Registers a handler for the given query type.
@@ -32,5 +32,5 @@ public interface QueryBus {
      * @param <Q>          the query type
      * @param <R>          the result type
      */
-    <Q extends Query, R> void register(Class<Q> queryType, QueryHandler<Q, R> handler);
+    <Q extends IQuery, R> void register(Class<Q> queryType, QueryHandler<Q, R> handler);
 }

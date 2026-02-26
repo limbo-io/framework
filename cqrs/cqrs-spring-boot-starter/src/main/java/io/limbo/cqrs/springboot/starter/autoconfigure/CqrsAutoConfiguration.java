@@ -4,6 +4,8 @@ import io.limbo.cqrs.core.command.CommandBus;
 import io.limbo.cqrs.core.command.InMemoryCommandBus;
 import io.limbo.cqrs.core.query.InMemoryQueryBus;
 import io.limbo.cqrs.core.query.QueryBus;
+import io.limbo.cqrs.spring.command.Cmd;
+import io.limbo.cqrs.spring.query.Query;
 import io.limbo.cqrs.spring.scanner.HandlerScanner;
 import io.limbo.cqrs.springboot.starter.properties.CqrsProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -60,5 +62,27 @@ public class CqrsAutoConfiguration {
     @ConditionalOnMissingBean(HandlerScanner.class)
     public HandlerScanner handlerScanner() {
         return new HandlerScanner();
+    }
+
+    /**
+     * Static query executor for convenient query execution.
+     * Implements ApplicationContextAware to automatically inject QueryBus.
+     */
+    @Bean
+    @ConditionalOnClass(Query.class)
+    @ConditionalOnProperty(prefix = "limbo.cqrs.query", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public Query query() {
+        return new Query();
+    }
+
+    /**
+     * Static command executor for convenient command execution.
+     * Implements ApplicationContextAware to automatically inject CommandBus.
+     */
+    @Bean
+    @ConditionalOnClass(Cmd.class)
+    @ConditionalOnProperty(prefix = "limbo.cqrs.command", name = "enabled", havingValue = "true", matchIfMissing = true)
+    public Cmd command() {
+        return new Cmd();
     }
 }

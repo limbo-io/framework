@@ -11,20 +11,35 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class InMemoryCommandBus implements CommandBus {
 
-    private final Map<Class<? extends Command>, CommandHandler<?>> handlers = new ConcurrentHashMap<>();
+    private final Map<Class<? extends ICommand>, CommandHandler<?, ?>> handlers = new ConcurrentHashMap<>();
 
     @Override
-    public Object execute(Command command) {
+    public Object execute(ICommand command) {
         if (command == null) {
             throw new IllegalArgumentException("Command cannot be null");
         }
 
-        CommandHandler<Command> handler = findHandler(command.getClass());
+        CommandHandler<ICommand, Object> handler = findHandler(command.getClass());
         return handler.handle(command);
     }
 
     @Override
-    public <T extends Command> void register(Class<T> commandType, CommandHandler<T> handler) {
+    @SuppressWarnings("unchecked")
+    public <R> R execute(ICommand command, Class<R> resultType) {
+        Object result = execute(command);
+        if (result == null) {
+            return null;
+        }
+        if (!resultType.isInstance(result)) {
+            throw new ClassCastException(
+                    "Command result type mismatch. Expected: " + resultType.getName() +
+                            ", Actual: " + result.getClass().getName());
+        }
+        return (R) result;
+    }
+
+    @Override
+    public <T extends ICommand, R> void register(Class<T> commandType, CommandHandler<T, R> handler) {
         if (commandType == null) {
             throw new IllegalArgumentException("Command type cannot be null");
         }
@@ -36,12 +51,12 @@ public class InMemoryCommandBus implements CommandBus {
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends Command> CommandHandler<T> findHandler(Class<?> commandType) {
-        CommandHandler<?> handler = handlers.get(commandType);
+    private <T extends ICommand, R> CommandHandler<T, R> findHandler(Class<?> commandType) {
+        CommandHandler<?, ?> handler = handlers.get(commandType);
         if (handler == null) {
             throw new HandlerNotFoundException(commandType);
         }
-        return (CommandHandler<T>) handler;
+        return (CommandHandler<T, R>) handler;
     }
 
     /**
