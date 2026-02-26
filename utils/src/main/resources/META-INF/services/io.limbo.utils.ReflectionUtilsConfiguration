@@ -1,0 +1,8 @@
+# SPI Configuration file for ReflectionUtils
+#
+# To customize the scan packages used by ReflectionUtils, implement
+# io.limbo.utils.ReflectionUtilsConfiguration interface and register
+# your implementation class here.
+#
+# Example:
+# com.example.config.MyReflectionUtilsConfiguration
