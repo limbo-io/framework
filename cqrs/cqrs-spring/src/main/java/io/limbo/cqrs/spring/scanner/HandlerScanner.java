@@ -1,7 +1,6 @@
 package io.limbo.cqrs.spring.scanner;
 
 import io.limbo.cqrs.spring.annotation.CommandHandler;
-import io.limbo.cqrs.spring.annotation.EventHandler;
 import io.limbo.cqrs.spring.annotation.QueryHandler;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -13,8 +12,6 @@ import org.springframework.core.type.classreading.MetadataReaderFactory;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,16 +34,6 @@ public class HandlerScanner {
      */
     public Set<Class<?>> scanCommandHandlers(String basePackage) {
         return scanHandlers(basePackage, CommandHandler.class);
-    }
-
-    /**
-     * Scans for event handler classes in the given base package.
-     *
-     * @param basePackage the base package to scan
-     * @return set of handler classes
-     */
-    public Set<Class<?>> scanEventHandlers(String basePackage) {
-        return scanHandlers(basePackage, EventHandler.class);
     }
 
     /**
@@ -125,9 +112,6 @@ public class HandlerScanner {
         if (method.isAnnotationPresent(CommandHandler.class)) {
             return HandlerType.COMMAND;
         }
-        if (method.isAnnotationPresent(EventHandler.class)) {
-            return HandlerType.EVENT;
-        }
         if (method.isAnnotationPresent(QueryHandler.class)) {
             return HandlerType.QUERY;
         }
@@ -146,7 +130,7 @@ public class HandlerScanner {
      * Type of handler.
      */
     public enum HandlerType {
-        COMMAND, EVENT, QUERY
+        COMMAND, QUERY
     }
 
     /**

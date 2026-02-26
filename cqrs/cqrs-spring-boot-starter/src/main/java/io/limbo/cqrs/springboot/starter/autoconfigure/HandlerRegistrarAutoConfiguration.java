@@ -1,9 +1,9 @@
 package io.limbo.cqrs.springboot.starter.autoconfigure;
 
+import io.limbo.cqrs.core.command.Command;
 import io.limbo.cqrs.core.command.CommandBus;
 import io.limbo.cqrs.core.command.CommandHandler;
-import io.limbo.cqrs.core.event.EventBus;
-import io.limbo.cqrs.core.event.EventHandler;
+import io.limbo.cqrs.core.query.Query;
 import io.limbo.cqrs.core.query.QueryBus;
 import io.limbo.cqrs.core.query.QueryHandler;
 import io.limbo.cqrs.spring.scanner.HandlerScanner;
@@ -25,11 +25,11 @@ import java.util.List;
 
 /**
  * Auto-configuration for automatic handler registration.
- * Scans beans for handler annotations and registers them with the appropriate bus.
+ * Scans beans for @CommandHandler and @QueryHandler annotations and registers them.
  */
 @Configuration(proxyBeanMethods = false)
 @AutoConfigureAfter(CqrsAutoConfiguration.class)
-@ConditionalOnClass({CommandBus.class, QueryBus.class, EventBus.class})
+@ConditionalOnClass({CommandBus.class, QueryBus.class})
 @ConditionalOnProperty(prefix = "limbo.cqrs", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class HandlerRegistrarAutoConfiguration {
 
@@ -41,7 +41,7 @@ public class HandlerRegistrarAutoConfiguration {
     public BeanPostProcessor commandHandlerPostProcessor(
             ObjectProvider<CommandBus> commandBusProvider,
             HandlerScanner handlerScanner) {
-        return new HandlerRegistrationPostProcessor(commandBusProvider, null, null, handlerScanner);
+        return new HandlerRegistrationPostProcessor(commandBusProvider, null, handlerScanner);
     }
 
     @Bean
@@ -50,16 +50,7 @@ public class HandlerRegistrarAutoConfiguration {
     public BeanPostProcessor queryHandlerPostProcessor(
             ObjectProvider<QueryBus> queryBusProvider,
             HandlerScanner handlerScanner) {
-        return new HandlerRegistrationPostProcessor(null, queryBusProvider, null, handlerScanner);
-    }
-
-    @Bean
-    @ConditionalOnBean({EventBus.class, HandlerScanner.class})
-    @ConditionalOnProperty(prefix = "limbo.cqrs.event", name = "enabled", havingValue = "true", matchIfMissing = true)
-    public BeanPostProcessor eventHandlerPostProcessor(
-            ObjectProvider<EventBus> eventBusProvider,
-            HandlerScanner handlerScanner) {
-        return new HandlerRegistrationPostProcessor(null, null, eventBusProvider, handlerScanner);
+        return new HandlerRegistrationPostProcessor(null, queryBusProvider, handlerScanner);
     }
 
     /**
@@ -69,17 +60,14 @@ public class HandlerRegistrarAutoConfiguration {
 
         private final ObjectProvider<CommandBus> commandBusProvider;
         private final ObjectProvider<QueryBus> queryBusProvider;
-        private final ObjectProvider<EventBus> eventBusProvider;
         private final HandlerScanner handlerScanner;
 
         HandlerRegistrationPostProcessor(
                 ObjectProvider<CommandBus> commandBusProvider,
                 ObjectProvider<QueryBus> queryBusProvider,
-                ObjectProvider<EventBus> eventBusProvider,
                 HandlerScanner handlerScanner) {
             this.commandBusProvider = commandBusProvider;
             this.queryBusProvider = queryBusProvider;
-            this.eventBusProvider = eventBusProvider;
             this.handlerScanner = handlerScanner;
         }
 
@@ -104,8 +92,8 @@ public class HandlerRegistrarAutoConfiguration {
                     if (commandBusProvider != null) {
                         CommandBus commandBus = commandBusProvider.getIfAvailable();
                         if (commandBus != null) {
-                            CommandHandler<T> handler = createCommandHandler(bean, method, payloadType);
-                            commandBus.register(payloadType, handler);
+                            CommandHandler<Command> handler = createCommandHandler(bean, method);
+                            commandBus.register((Class<Command>) payloadType, handler);
                             log.debug("Registered command handler for {} in bean {}",
                                     payloadType.getName(), bean.getClass().getName());
                         }
@@ -116,20 +104,9 @@ public class HandlerRegistrarAutoConfiguration {
                     if (queryBusProvider != null) {
                         QueryBus queryBus = queryBusProvider.getIfAvailable();
                         if (queryBus != null) {
-                            registerQueryHandler(bean, method, payloadType, queryBus);
+                            QueryHandler<Query, Object> handler = createQueryHandler(bean, method);
+                            queryBus.register((Class<Query>) payloadType, handler);
                             log.debug("Registered query handler for {} in bean {}",
-                                    payloadType.getName(), bean.getClass().getName());
-                        }
-                    }
-                    break;
-
-                case EVENT:
-                    if (eventBusProvider != null) {
-                        EventBus eventBus = eventBusProvider.getIfAvailable();
-                        if (eventBus != null) {
-                            EventHandler<T> handler = createEventHandler(bean, method, payloadType);
-                            eventBus.subscribe(payloadType, handler);
-                            log.debug("Registered event handler for {} in bean {}",
                                     payloadType.getName(), bean.getClass().getName());
                         }
                     }
@@ -137,12 +114,11 @@ public class HandlerRegistrarAutoConfiguration {
             }
         }
 
-        @SuppressWarnings("unchecked")
-        private <T> CommandHandler<T> createCommandHandler(Object bean, Method method, Class<T> payloadType) {
+        private CommandHandler<Command> createCommandHandler(Object bean, Method method) {
             method.setAccessible(true);
-            return commandMessage -> {
+            return command -> {
                 try {
-                    return method.invoke(bean, commandMessage.getPayload());
+                    return method.invoke(bean, command);
                 } catch (InvocationTargetException e) {
                     Throwable cause = e.getTargetException();
                     if (cause instanceof RuntimeException) {
@@ -155,13 +131,12 @@ public class HandlerRegistrarAutoConfiguration {
             };
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        private <Q, R> void registerQueryHandler(Object bean, Method method, Class<Q> queryType, QueryBus queryBus) {
+        @SuppressWarnings("unchecked")
+        private <R> QueryHandler<Query, R> createQueryHandler(Object bean, Method method) {
             method.setAccessible(true);
-            Class<R> resultType = (Class<R>) method.getReturnType();
-            QueryHandler<Q, R> handler = queryMessage -> {
+            return query -> {
                 try {
-                    return (R) method.invoke(bean, queryMessage.getPayload());
+                    return (R) method.invoke(bean, query);
                 } catch (InvocationTargetException e) {
                     Throwable cause = e.getTargetException();
                     if (cause instanceof RuntimeException) {
@@ -170,25 +145,6 @@ public class HandlerRegistrarAutoConfiguration {
                     throw new RuntimeException("Query handler failed: " + method, cause);
                 } catch (IllegalAccessException e) {
                     throw new RuntimeException("Cannot access query handler: " + method, e);
-                }
-            };
-            queryBus.register(queryType, resultType, handler);
-        }
-
-        @SuppressWarnings("unchecked")
-        private <T> EventHandler<T> createEventHandler(Object bean, Method method, Class<T> payloadType) {
-            method.setAccessible(true);
-            return eventMessage -> {
-                try {
-                    method.invoke(bean, eventMessage.getPayload());
-                } catch (InvocationTargetException e) {
-                    Throwable cause = e.getTargetException();
-                    if (cause instanceof RuntimeException) {
-                        throw (RuntimeException) cause;
-                    }
-                    throw new RuntimeException("Event handler failed: " + method, cause);
-                } catch (IllegalAccessException e) {
-                    throw new RuntimeException("Cannot access event handler: " + method, e);
                 }
             };
         }

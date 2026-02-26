@@ -7,14 +7,13 @@ package io.limbo.cqrs.core.query;
  * @param <R> the result type
  */
 @FunctionalInterface
-public interface QueryHandler<Q, R> {
+public interface QueryHandler<Q extends Query, R> {
 
     /**
-     * Handles the given query message.
+     * Handles the given query.
      *
-     * @param query the query message
+     * @param query the query to handle
      * @return the query result
-     * @throws Exception if handling fails
      */
-    R handle(QueryMessage<Q> query) throws Exception;
+    R handle(Q query);
 }

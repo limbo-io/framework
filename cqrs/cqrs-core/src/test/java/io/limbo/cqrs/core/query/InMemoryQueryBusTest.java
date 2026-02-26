@@ -15,15 +15,24 @@ class InMemoryQueryBusTest {
     }
 
     @Test
-    void shouldDispatchToRegisteredHandler() {
+    void shouldExecuteRegisteredHandler() {
         TestQuery query = new TestQuery("test");
-        queryBus.register(TestQuery.class, String.class, msg -> "Result: " + msg.getPayload().getCriteria());
+        queryBus.register(TestQuery.class, q -> "Result: " + q.getCriteria());
 
-        Object result = queryBus.query(QueryMessage.asQueryMessage(query));
+        Object result = queryBus.execute(query);
         assertEquals("Result: test", result);
     }
 
-    static class TestQuery {
+    @Test
+    void shouldExecuteWithTypedResult() {
+        TestQuery query = new TestQuery("test");
+        queryBus.register(TestQuery.class, q -> "Result: " + q.getCriteria());
+
+        String result = queryBus.execute(query, String.class);
+        assertEquals("Result: test", result);
+    }
+
+    static class TestQuery implements Query {
         private final String criteria;
         TestQuery(String criteria) { this.criteria = criteria; }
         String getCriteria() { return criteria; }

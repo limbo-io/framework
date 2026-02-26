@@ -1,28 +1,18 @@
 package io.limbo.cqrs.core.command;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * Interface for dispatching commands to handlers.
  */
 public interface CommandBus {
 
     /**
-     * Dispatches a command synchronously.
+     * Executes a command synchronously.
      *
-     * @param command the command to dispatch
+     * @param command the command to execute
      * @return the handler result
      * @throws io.limbo.cqrs.core.handler.HandlerNotFoundException if no handler registered
      */
-    Object dispatch(CommandMessage<?> command);
-
-    /**
-     * Dispatches a command asynchronously.
-     *
-     * @param command the command to dispatch
-     * @return future containing the handler result
-     */
-    CompletableFuture<Object> dispatchAsync(CommandMessage<?> command);
+    Object execute(Command command);
 
     /**
      * Registers a handler for the given command type.
@@ -31,5 +21,5 @@ public interface CommandBus {
      * @param handler     the handler to register
      * @param <T>         the command type
      */
-    <T> void register(Class<T> commandType, CommandHandler<T> handler);
+    <T extends Command> void register(Class<T> commandType, CommandHandler<T> handler);
 }

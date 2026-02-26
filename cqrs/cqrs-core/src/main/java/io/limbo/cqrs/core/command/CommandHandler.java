@@ -3,17 +3,16 @@ package io.limbo.cqrs.core.command;
 /**
  * Functional interface for handling commands.
  *
- * @param <T> the command payload type
+ * @param <T> the command type
  */
 @FunctionalInterface
-public interface CommandHandler<T> {
+public interface CommandHandler<T extends Command> {
 
     /**
-     * Handles the given command message.
+     * Handles the given command.
      *
-     * @param command the command message
+     * @param command the command to handle
      * @return the handler result (can be null)
-     * @throws Exception if handling fails
      */
-    Object handle(CommandMessage<T> command) throws Exception;
+    Object handle(T command);
 }
