@@ -1,5 +1,7 @@
-package io.limbo.cqrs.core.query;
+package io.limbo.test.cqrs.core.query;
 
+import io.limbo.cqrs.core.query.IQuery;
+import io.limbo.cqrs.core.query.InMemoryQueryBus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -32,7 +34,7 @@ class InMemoryQueryBusTest {
         assertEquals("Result: test", result);
     }
 
-    static class TestQuery implements IQuery {
+    static class TestQuery implements IQuery<String> {
         private final String criteria;
         TestQuery(String criteria) { this.criteria = criteria; }
         String getCriteria() { return criteria; }

@@ -1,5 +1,7 @@
-package io.limbo.cqrs.core.command;
+package io.limbo.test.cqrs.core.command;
 
+import io.limbo.cqrs.core.command.ICommand;
+import io.limbo.cqrs.core.command.InMemoryCommandBus;
 import io.limbo.cqrs.core.handler.HandlerNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -113,13 +115,13 @@ class InMemoryCommandBusTest {
         });
     }
 
-    static class TestCommand implements ICommand {
+    static class TestCommand implements ICommand<String> {
         private final String data;
         TestCommand(String data) { this.data = data; }
         String getData() { return data; }
     }
 
-    static class CreateUserCommand implements ICommand {
+    static class CreateUserCommand implements ICommand<UserId> {
         private final String email;
         CreateUserCommand(String email) { this.email = email; }
         String getEmail() { return email; }

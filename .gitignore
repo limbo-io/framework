@@ -124,3 +124,6 @@ app/public/.sass-cache/*
 *.db
 
 .vscode/
+
+# other
+.omc
