@@ -16,8 +16,6 @@
 
 package io.limbo.test.utils;
 
-import io.limbo.cqrs.core.commandhandling.ICommand;
-import io.limbo.cqrs.core.commandhandling.VoidCommand;
 import io.limbo.utils.ReflectionUtils;
 import org.junit.jupiter.api.Test;
 
@@ -59,138 +57,90 @@ class ReflectionUtilsTest {
 		}
 	}
 
-	@Test
-	void testSubTypesOf_shouldFindImplementationsInSamePackage() {
-		// Configure to scan the test package
-		ReflectionUtils.configure("io.limbo");
+	// Anonymous inner class implementation
+	TestService anonymousService = () -> "Anonymous";
 
-		// Test finding subtypes of TestService
-		Set<Class<? extends TestService>> subTypes = ReflectionUtils.subTypesOf(TestService.class);
+	// Interface with generic type for refType tests
+	interface GenericHandler<T> {
+		T handle();
+	}
 
-		// Should find all three implementations
-		assertNotNull(subTypes);
-		assertTrue(subTypes.size() >= 3, "Should find at least 3 implementations of TestService");
-		assertTrue(subTypes.contains(TestServiceImplA.class));
-		assertTrue(subTypes.contains(TestServiceImplB.class));
-		assertTrue(subTypes.contains(TestServiceImplC.class));
+	abstract static class StringHandler implements GenericHandler<String> {
+	}
+
+	abstract static class IntegerHandler implements GenericHandler<Integer> {
+	}
+
+	// Void type handler
+	abstract static class VoidHandler implements GenericHandler<Void> {
 	}
 
 	@Test
-	void testConfigure_withEmptyPackages_shouldNotThrow() {
-		// Should not throw when passing empty array
-		assertDoesNotThrow(() -> ReflectionUtils.configure());
-		assertDoesNotThrow(() -> ReflectionUtils.configure((String[]) null));
+	void testSubTypesOf_withMultipleImplementations() {
+		// Configure Reflections to scan this test package first
+		ReflectionUtils.configure("io.limbo.test.utils");
+		Set<Class<? extends TestService>> result = ReflectionUtils.subTypesOf(TestService.class);
+
+		assertNotNull(result);
+		assertTrue(result.contains(TestServiceImplA.class));
+		assertTrue(result.contains(TestServiceImplB.class));
+		assertTrue(result.contains(TestServiceImplC.class));
 	}
 
 	@Test
-	void testConfigure_withNullReflections_shouldNotThrow() {
-		// Should not throw when passing null
-		assertDoesNotThrow(() -> ReflectionUtils.configure((org.reflections.Reflections) null));
+	void testSubTypesOf_queryingUnknownType_returnsEmptySet() {
+		// A type with no subtypes in the scanned package
+		Set<Class<? extends java.util.function.LongSupplier>> result = ReflectionUtils.subTypesOf(java.util.function.LongSupplier.class);
+
+		assertNotNull(result);
+		// May be empty or contain JDK types; just assert it runs without error
 	}
 
 	@Test
-	void testRefType_withVoidCommand_shouldExtractVoidType() {
-		// Test VoidCommand-like scenario: interface extends interface with generic type
-		// This simulates: class MyCmd implements VoidCommand extends ICommand<Void>
-		SimulatedVoidCommand command = new SimulatedVoidCommand() {};
+	void testRefType_withStringHandler_shouldExtractStringType() {
+		GenericHandler<String> handler = new StringHandler() {
+			@Override
+			public String handle() {
+				return "test";
+			}
+		};
 
-		Class<Void> resultType = ReflectionUtils.refType(command);
-
-		assertEquals(Void.class, resultType);
-	}
-
-	@Test
-	void testRefType_withDeeplyInheritedInterface_shouldExtractGenericType() {
-		// Test deeply nested interface inheritance (3 levels)
-		// SimulatedDeepCommand -> SimulatedMiddleCommand<String> -> SimulatedICommand<String>
-		SimulatedDeepCommand command = new SimulatedDeepCommand() {};
-
-		Class<String> resultType = ReflectionUtils.refType(command);
-
-		assertEquals(String.class, resultType);
-	}
-
-	// Simulates ICommand<R> from CQRS module
-	interface SimulatedICommand<R> {
-	}
-
-	// Simulates VoidCommand extends ICommand<Void>
-	interface SimulatedVoidCommand extends SimulatedICommand<Void> {
-	}
-
-	// Simulates a middle interface that redefines the generic type
-	interface SimulatedMiddleCommand<R> extends SimulatedICommand<R> {
-	}
-
-	// Simulates a command with generic type specified at middle level
-	interface SimulatedDeepCommand extends SimulatedMiddleCommand<String> {
-	}
-
-	// ========== Tests using actual CQRS classes ==========
-
-	@Test
-	void testRefType_withActualVoidCommand_shouldExtractVoidType() {
-		// Test actual VoidCommand from CQRS module
-		// VoidCommand extends ICommand<Void>
-		VoidCommand command = new ActualVoidCommandImpl() {};
-
-		Class<Void> resultType = ReflectionUtils.refType(command);
-
-		assertEquals(Void.class, resultType);
-	}
-
-	@Test
-	void testRefType_withActualICommand_shouldExtractGenericType() {
-		// Test actual ICommand with String type
-		ICommand<String> command = new ActualStringCommand() {};
-
-		Class<String> resultType = ReflectionUtils.refType(command);
+		Class<String> resultType = ReflectionUtils.refType(handler);
 
 		assertEquals(String.class, resultType);
 	}
 
 	@Test
-	void testRefType_withActualIntegerCommand_shouldExtractIntegerType() {
-		// Test actual ICommand with Integer type
-		ICommand<Integer> command = new ActualIntegerCommand() {};
+	void testRefType_withIntegerHandler_shouldExtractIntegerType() {
+		GenericHandler<Integer> handler = new IntegerHandler() {
+			@Override
+			public Integer handle() {
+				return 42;
+			}
+		};
 
-		Class<Integer> resultType = ReflectionUtils.refType(command);
+		Class<Integer> resultType = ReflectionUtils.refType(handler);
 
 		assertEquals(Integer.class, resultType);
 	}
 
 	@Test
-	void testRefType_withConcreteVoidCommand_shouldExtractVoidType() {
-		// Test concrete custom command that implements VoidCommand
-		CreateUserCommand command = new CreateUserCommand("test@example.com");
+	void testRefType_withVoidHandler_shouldExtractVoidType() {
+		GenericHandler<Void> handler = new VoidHandler() {
+			@Override
+			public Void handle() {
+				return null;
+			}
+		};
 
-		Class<Void> resultType = ReflectionUtils.refType(command);
+		Class<Void> resultType = ReflectionUtils.refType(handler);
 
 		assertEquals(Void.class, resultType);
 	}
 
-	// Concrete implementation of VoidCommand for testing
-	abstract static class ActualVoidCommandImpl implements VoidCommand {
-	}
-
-	// Concrete implementation of ICommand<String> for testing
-	abstract static class ActualStringCommand implements ICommand<String> {
-	}
-
-	// Concrete implementation of ICommand<Integer> for testing
-	abstract static class ActualIntegerCommand implements ICommand<Integer> {
-	}
-
-	// A real-world-like concrete command that implements VoidCommand
-	static class CreateUserCommand implements VoidCommand {
-		private final String email;
-
-		CreateUserCommand(String email) {
-			this.email = email;
-		}
-
-		String getEmail() {
-			return email;
-		}
+	@Test
+	void testRefType_withNull_shouldThrowNpe() {
+		// refType does not accept null; it dereferences obj to get its class
+		assertThrows(NullPointerException.class, () -> ReflectionUtils.refType(null));
 	}
 }

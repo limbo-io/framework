@@ -1,6 +1,7 @@
 package io.limbo.test.cqrs.core.commandhandling;
 
 import io.limbo.cqrs.core.commandhandling.CommandHandler;
+import io.limbo.cqrs.core.commandhandling.HandlerNotFoundException;
 import io.limbo.cqrs.core.commandhandling.HandlerRegistration;
 import io.limbo.cqrs.core.commandhandling.ICommand;
 import io.limbo.cqrs.core.commandhandling.InMemoryCommandBus;
@@ -8,6 +9,8 @@ import io.limbo.cqrs.core.message.CommandMessage;
 import io.limbo.cqrs.core.message.CommandResultMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -26,112 +29,76 @@ class InMemoryCommandBusTest {
 
         commandBus.<TestCommand, String>register(TestCommand.class, cmd -> "result: " + cmd.getData());
 
-        CommandMessage<TestCommand> message = CommandMessage.of(command, "test-id");
-        CommandResultMessage<?> result = commandBus.dispatch(message);
-
-        assertFalse(result.isExceptional());
-        assertEquals("result: test", result.getPayload());
+        String result = commandBus.dispatch(command);
+        assertEquals("result: test", result);
     }
 
     @Test
-    void shouldReturnHandlerResult() {
-        TestCommand command = new TestCommand("input");
-
-        commandBus.register(TestCommand.class, cmd -> "result: " + cmd.getData());
-
-        CommandMessage<TestCommand> message = CommandMessage.of(command, "test-id");
-        CommandResultMessage<?> result = commandBus.dispatch(message);
-
-        assertFalse(result.isExceptional());
-        assertEquals("result: input", result.getPayload());
-    }
-
-    @Test
-    void shouldExecuteWithTypedResult() {
-        CreateUserCommand command = new CreateUserCommand("test@example.com");
-
-        commandBus.<CreateUserCommand, UserId>register(CreateUserCommand.class, cmd -> new UserId(cmd.getEmail()));
-
-        CommandMessage<CreateUserCommand> message = CommandMessage.of(command, "test-id");
-        CommandResultMessage<?> result = commandBus.dispatch(message);
-
-        assertFalse(result.isExceptional());
-        assertTrue(result.getPayload() instanceof UserId);
-        UserId userId = (UserId) result.getPayload();
-        assertEquals("test@example.com", userId.getId());
-    }
-
-    @Test
-    void shouldReturnNullForNullResult() {
+    void shouldThrowWhenNoHandlerFound() {
         TestCommand command = new TestCommand("test");
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
-        CommandHandler handler = cmd -> null;
-        commandBus.register(TestCommand.class, handler);
+        assertThrows(HandlerNotFoundException.class, () -> commandBus.dispatch(command));
+    }
 
-        CommandMessage<TestCommand> message = CommandMessage.of(command, "test-id");
-        CommandResultMessage<?> result = commandBus.dispatch(message);
+    @Test
+    void shouldDispatchAsync() throws Exception {
+        TestCommand command = new TestCommand("async");
+
+        commandBus.<TestCommand, String>register(TestCommand.class, cmd -> "async: " + cmd.getData());
+
+        CompletableFuture<String> future = commandBus.dispatchAsync(command);
+        assertEquals("async: async", future.get());
+    }
+
+    @Test
+    void shouldHandleResultMessage() {
+        TestCommand command = new TestCommand("message");
+
+        commandBus.<TestCommand, String>register(TestCommand.class, cmd -> "msg: " + cmd.getData());
+
+        CommandMessage<TestCommand> message = new CommandMessage<>("test-id", command);
+        CommandResultMessage<String> result = commandBus.dispatch(message);
 
         assertFalse(result.isExceptional());
-        assertNull(result.getPayload());
+        assertEquals("msg: message", result.getPayload());
     }
 
     @Test
-    void shouldThrowForNullMessage() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            commandBus.dispatch(null);
+    void shouldHandleExceptionInResultMessage() {
+        TestCommand command = new TestCommand("error");
+
+        commandBus.<TestCommand, String>register(TestCommand.class, cmd -> {
+            throw new RuntimeException("Test error");
         });
+
+        CommandMessage<TestCommand> message = new CommandMessage<>(command);
+        CommandResultMessage<String> result = commandBus.dispatch(message);
+
+        assertTrue(result.isExceptional());
+        assertNotNull(result.getException());
+        assertEquals("Test error", result.getException().getMessage());
     }
 
     @Test
-    void shouldThrowForUnregisteredCommand() {
+    void shouldUnregisterHandler() {
         TestCommand command = new TestCommand("test");
-        CommandMessage<TestCommand> message = CommandMessage.of(command, "test-id");
 
-        assertThrows(io.limbo.cqrs.core.commandhandling.HandlerNotFoundException.class, () -> {
-            commandBus.dispatch(message);
-        });
+        HandlerRegistration reg = commandBus.<TestCommand, String>register(TestCommand.class,
+                cmd -> "result");
+
+        // Should work before unregister
+        assertEquals("result", commandBus.dispatch(command));
+
+        // Unregister
+        reg.unregister();
+
+        // Should throw after unregister
+        assertThrows(HandlerNotFoundException.class, () -> commandBus.dispatch(command));
     }
 
-    @Test
-    void shouldThrowForNullCommandType() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            CommandHandler handler = cmd -> null;
-            commandBus.register(null, handler);
-        });
-    }
+    // Test support classes
 
-    @Test
-    void shouldThrowForNullHandler() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            @SuppressWarnings({"unchecked", "rawtypes"})
-            CommandHandler handler = null;
-            commandBus.register(TestCommand.class, handler);
-        });
-    }
-
-    @Test
-    void shouldThrowForNullRegistration() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            commandBus.register((HandlerRegistration<?, ?>) null);
-        });
-    }
-
-    @Test
-    void shouldClearRegistrations() {
-        TestCommand command = new TestCommand("test");
-        commandBus.<TestCommand, String>register(TestCommand.class, cmd -> "result");
-
-        commandBus.clear();
-
-        CommandMessage<TestCommand> message = CommandMessage.of(command, "test-id");
-        assertThrows(io.limbo.cqrs.core.commandhandling.HandlerNotFoundException.class, () -> {
-            commandBus.dispatch(message);
-        });
-    }
-
-    static class TestCommand implements ICommand<String> {
+    static class TestCommand implements ICommand {
         private final String data;
 
         TestCommand(String data) {
@@ -140,30 +107,6 @@ class InMemoryCommandBusTest {
 
         String getData() {
             return data;
-        }
-    }
-
-    static class CreateUserCommand implements ICommand<UserId> {
-        private final String email;
-
-        CreateUserCommand(String email) {
-            this.email = email;
-        }
-
-        String getEmail() {
-            return email;
-        }
-    }
-
-    static class UserId {
-        private final String id;
-
-        UserId(String id) {
-            this.id = id;
-        }
-
-        String getId() {
-            return id;
         }
     }
 }

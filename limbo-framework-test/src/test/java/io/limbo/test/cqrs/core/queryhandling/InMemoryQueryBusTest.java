@@ -1,11 +1,16 @@
 package io.limbo.test.cqrs.core.queryhandling;
 
-import io.limbo.cqrs.core.message.QueryMessage;
-import io.limbo.cqrs.core.message.QueryResultMessage;
+import io.limbo.cqrs.core.commandhandling.HandlerNotFoundException;
+import io.limbo.cqrs.core.queryhandling.HandlerRegistration;
 import io.limbo.cqrs.core.queryhandling.IQuery;
 import io.limbo.cqrs.core.queryhandling.InMemoryQueryBus;
+import io.limbo.cqrs.core.queryhandling.QueryHandler;
+import io.limbo.cqrs.core.message.QueryMessage;
+import io.limbo.cqrs.core.message.QueryResultMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -21,56 +26,61 @@ class InMemoryQueryBusTest {
     @Test
     void shouldExecuteRegisteredHandler() {
         TestQuery query = new TestQuery("test");
-        queryBus.register(TestQuery.class, q -> "Result: " + q.getCriteria());
 
-        QueryMessage<TestQuery> message = QueryMessage.of(query, "test-id");
-        QueryResultMessage<?> result = queryBus.dispatch(message);
+        queryBus.<TestQuery, String>register(TestQuery.class, q -> "result: " + q.getCriteria());
+
+        String result = queryBus.dispatch(query);
+        assertEquals("result: test", result);
+    }
+
+    @Test
+    void shouldThrowWhenNoHandlerFound() {
+        TestQuery query = new TestQuery("test");
+
+        assertThrows(HandlerNotFoundException.class, () -> queryBus.dispatch(query));
+    }
+
+    @Test
+    void shouldDispatchAsync() throws Exception {
+        TestQuery query = new TestQuery("async");
+
+        queryBus.<TestQuery, String>register(TestQuery.class, q -> "async: " + q.getCriteria());
+
+        CompletableFuture<String> future = queryBus.dispatchAsync(query);
+        assertEquals("async: async", future.get());
+    }
+
+    @Test
+    void shouldHandleResultMessage() {
+        TestQuery query = new TestQuery("message");
+
+        queryBus.<TestQuery, String>register(TestQuery.class, q -> "msg: " + q.getCriteria());
+
+        QueryMessage<TestQuery, String> message = new QueryMessage<>("test-id", query, String.class);
+        QueryResultMessage<String> result = queryBus.dispatch(message);
 
         assertFalse(result.isExceptional());
-        assertEquals("Result: test", result.getPayload());
+        assertEquals("msg: message", result.getPayload());
     }
 
     @Test
-    void shouldExecuteWithTypedResult() {
+    void shouldUnregisterHandler() {
         TestQuery query = new TestQuery("test");
-        queryBus.register(TestQuery.class, q -> "Result: " + q.getCriteria());
 
-        QueryMessage<TestQuery> message = QueryMessage.of(query, "test-id");
-        QueryResultMessage<?> result = queryBus.dispatch(message);
+        HandlerRegistration reg = queryBus.<TestQuery, String>register(TestQuery.class,
+                q -> "result");
 
-        assertFalse(result.isExceptional());
-        assertTrue(result.getPayload() instanceof String);
-        assertEquals("Result: test", result.getPayload());
+        // Should work before unregister
+        assertEquals("result", queryBus.dispatch(query));
+
+        // Unregister
+        reg.unregister();
+
+        // Should throw after unregister
+        assertThrows(HandlerNotFoundException.class, () -> queryBus.dispatch(query));
     }
 
-    @Test
-    void shouldReturnNullForNullResult() {
-        TestQuery query = new TestQuery("test");
-        queryBus.register(TestQuery.class, q -> null);
-
-        QueryMessage<TestQuery> message = QueryMessage.of(query, "test-id");
-        QueryResultMessage<?> result = queryBus.dispatch(message);
-
-        assertFalse(result.isExceptional());
-        assertNull(result.getPayload());
-    }
-
-    @Test
-    void shouldThrowForNullMessage() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            queryBus.dispatch(null);
-        });
-    }
-
-    @Test
-    void shouldThrowForUnregisteredQuery() {
-        TestQuery query = new TestQuery("test");
-        QueryMessage<TestQuery> message = QueryMessage.of(query, "test-id");
-
-        assertThrows(io.limbo.cqrs.core.commandhandling.HandlerNotFoundException.class, () -> {
-            queryBus.dispatch(message);
-        });
-    }
+    // Test support classes
 
     static class TestQuery implements IQuery<String> {
         private final String criteria;

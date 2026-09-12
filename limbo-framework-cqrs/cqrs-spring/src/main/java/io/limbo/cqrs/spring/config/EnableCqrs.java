@@ -2,24 +2,15 @@ package io.limbo.cqrs.spring.config;
 
 import org.springframework.context.annotation.Import;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
- * Enables CQRS configuration in a Spring application.
- * Add this annotation to a configuration class to enable automatic configuration
- * of command, query, and event buses, as well as automatic handler registration.
+ * Enable CQRS support in Spring applications.
+ * This annotation imports the necessary configuration for command and query handling.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 @Import(CqrsSpringConfiguration.class)
 public @interface EnableCqrs {
-
-    /**
-     * Base packages to scan for handlers.
-     * If empty, the package of the annotated class is used.
-     */
-    String[] basePackages() default {};
 }

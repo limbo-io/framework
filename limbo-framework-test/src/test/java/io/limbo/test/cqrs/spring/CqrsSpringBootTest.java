@@ -47,7 +47,7 @@ class CqrsSpringBootTest {
         SampleCommandHandler.TestCommand command = new SampleCommandHandler.TestCommand("test data");
 
         // When
-        SampleCommandHandler.TestResult result = commandGateway.sendAndWait(command);
+        SampleCommandHandler.TestResult result = commandGateway.send(command);
 
         // Then
         assertThat(result).isNotNull();

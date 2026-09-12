@@ -18,7 +18,7 @@ public class SampleCommandHandler {
     /**
      * Test command.
      */
-    public static class TestCommand implements ICommand<TestResult> {
+    public static class TestCommand implements ICommand {
         private final String data;
 
         public TestCommand(String data) {
