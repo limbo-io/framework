@@ -13,6 +13,7 @@ tmp/
 *~.nib
 local.properties
 .settings/
+.settings
 .loadpath
 .factorypath
 .project
@@ -127,3 +128,6 @@ app/public/.sass-cache/*
 
 # other
 .omc
+.claude
+.specify
+.evolver

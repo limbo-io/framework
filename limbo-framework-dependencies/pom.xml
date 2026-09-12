@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.limbo-io</groupId>
+        <artifactId>limbo-framework</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>limbo-framework-dependencies</artifactId>
+    <packaging>pom</packaging>
+    <name>Limbo Framework Dependencies</name>
+    <description>Bill of Materials (BOM) for Limbo Framework</description>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Limbo Framework Modules -->
+            <dependency>
+                <groupId>io.github.limbo-io</groupId>
+                <artifactId>limbo-framework-utils</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.limbo-io</groupId>
+                <artifactId>cqrs-core</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.limbo-io</groupId>
+                <artifactId>cqrs-spring</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.github.limbo-io</groupId>
+                <artifactId>cqrs-spring-boot-starter</artifactId>
+                <version>${revision}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+</project>

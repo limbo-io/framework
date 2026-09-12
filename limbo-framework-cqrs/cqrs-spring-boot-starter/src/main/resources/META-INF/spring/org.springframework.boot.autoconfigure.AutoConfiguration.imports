@@ -1,0 +1,2 @@
+io.limbo.cqrs.springboot.starter.autoconfigure.CqrsAutoConfiguration
+io.limbo.cqrs.springboot.starter.autoconfigure.BeanValidationInterceptorAutoConfiguration

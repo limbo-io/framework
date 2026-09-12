@@ -1,0 +1,22 @@
+{
+  "properties": [
+    {
+      "name": "limbo.cqrs.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable CQRS auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "limbo.cqrs.command.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable command bus auto-configuration.",
+      "defaultValue": true
+    },
+    {
+      "name": "limbo.cqrs.query.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Whether to enable query bus auto-configuration.",
+      "defaultValue": true
+    }
+  ]
+}
